@@ -8,16 +8,16 @@ from graphene_django import form_converter
 from graphene_django.converter import get_choices
 from graphene_django.filter.utils import get_filtering_args_from_filterset
 from .forms import ReduceMixinForm
+from .types import FormError
 
 __all__ = [
     'convert_filterset', 'convert_form', 'convert_form_errors',
     'get_object_or_none', 'get_enum_from_field',
-    'FormError', 'FormMixinError', 'FormMixin',
-    'ModelFormMixin', 'ReduceMixin'
 ]
 
 """
 Convert filter set into graphql type
++
 """
 
 
@@ -63,16 +63,6 @@ def convert_form(form_class, name=None, graphql_type=InputObjectType, all_option
 
 
 """
-Form error type
-"""
-
-
-class FormError(graphene.ObjectType):
-    key = graphene.String()
-    message = graphene.String()
-
-
-"""
 Convert form errors into graphql errors
 """
 
@@ -102,6 +92,9 @@ Form mixin for graphql mutations
 class FormMixin(object):
     form_class = None
     form_default_kwargs = {}
+    output_key = 'instance'
+
+    errors = graphene.List(FormError)
 
     @staticmethod
     def get_form_data(root, args, context, info):
@@ -122,9 +115,9 @@ class FormMixin(object):
     def on_form_error(cls, form, root, args, context, info):
         return cls(errors=convert_form_errors(form))
 
-    @staticmethod
-    def on_form_valid(form, root, args, context, info):
-        raise NotImplementedError()
+    @classmethod
+    def on_form_valid(cls, form, root, args, context, info):
+        return cls(**{cls.output_key: form.save()})
 
     @classmethod
     def mutate(cls, root, args, context, info):
