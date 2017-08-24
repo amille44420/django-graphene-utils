@@ -22,6 +22,6 @@ setup(
     ],
     keywords='django graphene utils',
     packages=['django_graphene_utils'],
-    install_requires=['django', 'django-graphene'],
+    install_requires=['django', 'graphene-django'],
     python_requires='>=3.5',
 )
