@@ -13,6 +13,7 @@ from .types import FormError
 __all__ = [
     'convert_filterset', 'convert_form', 'convert_form_errors',
     'get_object_or_none', 'get_enum_from_field',
+    'get_enum_from_choices',
 ]
 
 """
@@ -220,7 +221,17 @@ def get_enum_from_field(model, field_name, enum_name=None):
     meta = field.model._meta
     # get a name for the enum
     name = enum_name or to_camel_case('{}_{}'.format(meta.object_name, field.name))
+
     # then convert choices
+    return get_enum_from_choices(
+        choices=choices,
+        enum_name=name,
+        required_by_default=not field.null,
+        help_text=field.help_text,
+    )
+
+
+def get_enum_from_choices(choices, enum_name, required_by_default=True, help_text=''):
     choices = list(get_choices(choices))
     named_choices = [(c[0], c[1]) for c in choices]
     named_choices_descriptions = {c[0]: c[2] for c in choices}
@@ -231,10 +242,10 @@ def get_enum_from_field(model, field_name, enum_name=None):
             return named_choices_descriptions[self.name]
 
     # get the enum type
-    enum = graphene.Enum(name, list(named_choices), type=EnumWithDescriptionsType)
+    enum = graphene.Enum(enum_name, list(named_choices), type=EnumWithDescriptionsType)
 
     # make it way easier to convert it for us
-    def apply(required=not field.null):
-        return enum(description=field.help_text, required=required)
+    def apply(required=required_by_default):
+        return enum(description=help_text, required=required)
 
     return apply
