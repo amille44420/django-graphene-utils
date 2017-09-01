@@ -8,7 +8,7 @@ from graphene_django.registry import get_global_registry
 from .types import FormError
 from .utils import convert_form_errors
 
-__all__ = ['ModelFormMutation', ]
+__all__ = ['ModelFormMutation', 'FormMutation']
 
 """
 Base Form mutation
