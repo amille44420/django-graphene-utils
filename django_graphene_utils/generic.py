@@ -56,7 +56,7 @@ class BaseModelFormMutation(object):
     def build_form(self, root, args, context, info):
         return self._meta.form_class(**self.get_form_kwargs(root, args, context, info))
 
-    def execute(self, root, args, context, info):
+    def _execute(self, root, args, context, info):
         # first build the form
         form = self.form = self.build_form(root, args, context, info)
 
@@ -70,7 +70,10 @@ class BaseModelFormMutation(object):
             # move on the unsuccessful method
             response = self.get_unsuccessful_response(root, args, context, info, form)
 
-        return self.mutation(response)
+        return self.mutation(**response)
+
+    def execute(self, root, args, context, info):
+        return self.__class__._execute_chain(self, root, args, context, info)
 
     def get_successful_response(self, root, args, context, info, form):
         response = {self._meta.output_success_key: True}
@@ -152,14 +155,13 @@ class Options(object):
 
         # from the form get the model
         self.model = self.form_class._meta.model
-        # then get the graphql type for this model
-        self.output_type = self.registry.get_type_for_model(self.model)
-        assert issubclass(self.output_type, graphene.ObjectType), \
-            'No valid GraphQL type for the model %r' % self.output_type
 
         if self.queryset is None:
             # get the queryset from the model
             self.queryset = _get_queryset(self.model)
+
+        # middlewares
+        self.middlewares = getattr(options, 'middlewares', [])
 
 
 """
@@ -248,7 +250,19 @@ class ModelFormMutationMeta(type):
         }
 
         if opts.output_instance_key is not None:
-            output_attrs[opts.output_instance_key] = graphene.Field(opts.output_type)
+            if not opts.output_instance_key in output_attrs:
+                # get the output type from the registry
+                output_type = opts.registry.get_type_for_model(opts.model)
+                # we have to handle it ourselves
+                output_attrs[opts.output_instance_key] = graphene.Field(output_type)
+
+        # build the execute chain
+        execute_chain = lambda self, root, args, context, info: self._execute(root, args, context, info)
+
+        for mw in reversed(opts.middlewares):
+            execute_chain = mw(execute_chain)
+
+        new_class._execute_chain = execute_chain
 
         return new_class
 
