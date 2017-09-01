@@ -49,7 +49,10 @@ def convert_form_field(field, as_optional=False):
     return field
 
 
-def convert_form(form_class, name=None, graphql_type=InputObjectType, all_optional=False):
+def convert_form(form_class, name=None, graphql_type=InputObjectType, all_optional=False, exclude_fields=None):
+    if exclude_fields is None:
+        exclude_fields = []
+
     return type(
         # use the form name to define the input type name
         name or to_camel_case('{}_{}'.format(form_class, 'input')),
@@ -58,9 +61,12 @@ def convert_form(form_class, name=None, graphql_type=InputObjectType, all_option
         # convert form fields into graphql fields
         # we must keep the ordering
         OrderedDict(
-            (name, convert_form_field(field, all_optional)) for name, field in form_class.base_fields.items()
+            (name, convert_form_field(field, all_optional))
+            for name, field in form_class.base_fields.items()
+            if name not in exclude_fields
         )
     )
+
 
 
 """
