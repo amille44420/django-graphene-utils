@@ -311,7 +311,7 @@ class ModelFormMutationMeta(FormMutationMeta):
         output_attrs = new_class._output_attrs
 
         if opts.output_instance_key is not None:
-            if not opts.output_instance_key in output_attrs:
+            if opts.output_instance_key not in output_attrs:
                 # get the output type from the registry
                 output_type = opts.registry.get_type_for_model(opts.model)
                 # we have to handle it ourselves

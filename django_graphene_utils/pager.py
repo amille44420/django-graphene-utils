@@ -1,7 +1,6 @@
 import graphene
 from graphene.utils.str_converters import to_camel_case
 from django.utils import six
-from django.utils.functional import cached_property
 
 __all__ = ['Pager']
 

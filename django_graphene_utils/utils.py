@@ -68,7 +68,6 @@ def convert_form(form_class, name=None, graphql_type=InputObjectType, all_option
     )
 
 
-
 """
 Convert form errors into graphql errors
 """
